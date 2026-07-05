@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מעקב 777</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@300;400;500;700;900&display=swap');
+
+  :root{
+    --navy-deep:#0B1929;
+    --navy-card:#142A42;
+    --navy-card-2:#1B3554;
+    --gold:#D4AF37;
+    --gold-soft:#E8CE7A;
+    --cream:#F2E8D5;
+    --coral:#E8574A;
+    --teal:#3F8C8A;
+    --muted:#7C93AC;
+    --line:rgba(212,175,55,0.25);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(212,175,55,0.08), transparent 40%),
+      var(--navy-deep);
+    color:var(--cream);
+    font-family:'Heebo', sans-serif;
+    min-height:100vh;
+    padding:16px 12px 60px;
+  }
+
+  .app{max-width:640px;margin:0 auto;}
+
+  .hero{display:flex;justify-content:center;margin-bottom:18px;}
+  .ticket-stub{
+    position:relative;
+    background:linear-gradient(155deg, var(--navy-card), var(--navy-card-2));
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px 34px;
+    text-align:center;
+    box-shadow:0 8px 30px rgba(0,0,0,0.35);
+  }
+  .ticket-stub::before, .ticket-stub::after{
+    content:"";position:absolute;width:16px;height:16px;
+    background:var(--navy-deep);border-radius:50%;top:50%;transform:translateY(-50%);
+  }
+  .ticket-stub::before{right:-8px;} .ticket-stub::after{left:-8px;}
+  .stub-label{display:block;font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:4px;}
+  .ticket-stub h1{
+    font-family:'Frank Ruhl Libre', serif;font-weight:900;font-size:34px;
+    margin:0;color:var(--gold);letter-spacing:4px;
+  }
+
+  /* Tabs */
+  .tabs{
+    display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;
+    padding-bottom:4px;-webkit-overflow-scrolling:touch;
+  }
+  .tabs::-webkit-scrollbar{height:3px;}
+  .tab-btn{
+    flex:0 0 auto;background:rgba(255,255,255,0.04);border:1px solid var(--line);
+    color:var(--muted);font-family:'Heebo',sans-serif;font-size:13px;font-weight:500;
+    padding:8px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;
+  }
+  .tab-btn.active{background:var(--gold);color:var(--navy-deep);border-color:var(--gold);font-weight:700;}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .card{
+    background:var(--navy-card);border:1px solid var(--line);border-radius:14px;
+    padding:18px;margin-bottom:16px;
+  }
+  .card h2{font-family:'Frank Ruhl Libre', serif;font-size:19px;margin:0 0 14px;color:var(--gold-soft);}
+  .card p.hint{font-size:12px;color:var(--muted);margin:-8px 0 14px;line-height:1.6;}
+
+  .field-row{margin-bottom:12px;display:flex;flex-direction:column;gap:6px;}
+  .field-row label{font-size:13px;color:var(--muted);}
+  .field-row input, .field-row select, .field-row textarea{
+    background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.3);
+    border-radius:8px;padding:10px 12px;color:var(--cream);
+    font-family:'Heebo', sans-serif;font-size:15px;resize:vertical;
+  }
+  .field-row input:focus, .field-row select:focus, .field-row textarea:focus{
+    outline:2px solid var(--gold);outline-offset:1px;
+  }
+  .row-2{display:flex;gap:10px;}
+  .row-2 > div{flex:1;}
+
+  .btn-primary{
+    width:100%;background:var(--gold);color:var(--navy-deep);border:none;
+    border-radius:8px;padding:12px;font-family:'Heebo', sans-serif;font-weight:700;
+    font-size:15px;cursor:pointer;
+  }
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-secondary{
+    background:rgba(212,175,55,0.12);color:var(--gold-soft);border:1px solid var(--line);
+    border-radius:8px;padding:10px 14px;font-family:'Heebo',sans-serif;font-weight:600;
+    font-size:13px;cursor:pointer;
+  }
+  .btn-ghost{
+    background:none;border:1px solid var(--muted);color:var(--muted);border-radius:8px;
+    padding:6px 12px;font-size:13px;cursor:pointer;font-family:'Heebo', sans-serif;
+  }
+  .btn-ghost:hover{border-color:var(--coral);color:var(--coral);}
+  .error{color:var(--coral);font-size:13px;margin-top:8px;}
+  .hidden{display:none !important;}
+
+  .number-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:6px;margin-bottom:16px;}
+  .num-cell{
+    aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:8px;font-size:12px;font-weight:700;background:rgba(255,255,255,0.04);color:var(--muted);
+  }
+  .num-cell .cnt{font-size:8px;font-weight:400;opacity:0.8;margin-top:1px;}
+
+  .picker-header{display:flex;justify-content:space-between;align-items:center;}
+  .picker-count{font-size:12px;color:var(--gold-soft);font-weight:600;}
+  .number-grid.picker{margin-bottom:6px;}
+  .pick-cell{
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border-radius:8px;font-size:14px;font-weight:700;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    color:var(--cream);cursor:pointer;user-select:none;
+    transition:background 0.1s ease, transform 0.1s ease;
+  }
+  .pick-cell:active{transform:scale(0.92);}
+  .pick-cell.selected{
+    background:var(--gold);color:var(--navy-deep);border-color:var(--gold);
+  }
+
+  .toggle-group{display:flex;gap:6px;background:rgba(0,0,0,0.2);padding:4px;border-radius:20px;margin-bottom:14px;}
+  .toggle{background:none;border:none;color:var(--muted);font-family:'Heebo',sans-serif;font-size:12px;
+    padding:6px 12px;border-radius:16px;cursor:pointer;}
+  .toggle.active{background:var(--gold);color:var(--navy-deep);font-weight:700;}
+
+  .hot-cold{display:flex;gap:16px;flex-wrap:wrap;}
+  .hot-cold > div{flex:1;min-width:130px;}
+  .hot-cold h3{font-size:13px;margin:0 0 8px;color:var(--muted);font-weight:500;}
+  .chip-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--navy-deep);}
+  .chip.hot{background:var(--coral);} .chip.cold{background:var(--teal);} .chip.missing{background:var(--muted);}
+  .no-data{color:var(--muted);font-size:13px;}
+
+  .balls{display:flex;flex-wrap:wrap;gap:5px;}
+  .ball{width:26px;height:26px;border-radius:50%;background:var(--navy-card-2);border:1px solid var(--gold);
+    color:var(--gold-soft);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+
+  .draw-card{background:rgba(255,255,255,0.03);border:1px dashed var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+  .draw-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .draw-meta{font-size:12px;color:var(--muted);}
+  .draw-meta b{color:var(--gold-soft);}
+  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;}
+  .del-btn:hover{color:var(--coral);}
+  .empty{color:var(--muted);font-size:14px;text-align:center;padding:10px 0;}
+
+  table.stat-table{width:100%;border-collapse:collapse;font-size:13px;}
+  table.stat-table th{text-align:right;color:var(--muted);font-weight:500;padding:6px 4px;border-bottom:1px solid var(--line);font-size:12px;}
+  table.stat-table td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,0.05);}
+  table.stat-table td b{color:var(--gold-soft);}
+
+  .pair-badge{
+    display:inline-flex;align-items:center;gap:4px;background:rgba(212,175,55,0.12);
+    border:1px solid var(--line);border-radius:16px;padding:5px 10px;font-size:12px;margin:3px 3px 3px 0;
+  }
+  .pair-badge .cnt{color:var(--gold);font-weight:700;}
+
+  .history-header, .stats-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .history-header h2, .stats-header h2{margin:0;}
+
+  footer.note{text-align:center;font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6;}
+
+  @media (max-width:380px){
+    .ticket-stub h1{font-size:28px;letter-spacing:2px;}
+    .ball,.chip{width:24px;height:24px;font-size:10px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="hero">
+    <div class="ticket-stub">
+      <span class="stub-label">מעקב תוצאות יומי</span>
+      <h1>777</h1>
+    </div>
+  </div>
+
+  <div id="storage-banner" class="hidden" style="background:rgba(232,87,74,0.15);border:1px solid var(--coral);color:var(--coral);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;line-height:1.6;"></div>
+
+  <div id="diag-box" style="background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:14px;line-height:1.9;color:var(--muted);direction:ltr;text-align:left;white-space:pre-wrap;"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="entry">הזנה</button>
+    <button class="tab-btn" data-tab="wall">קיר מספרים</button>
+    <button class="tab-btn" data-tab="missing">חסרים</button>
+    <button class="tab-btn" data-tab="gaps">חזרות</button>
+    <button class="tab-btn" data-tab="pairs">צירופים</button>
+    <button class="tab-btn" data-tab="history">היסטוריה</button>
+  </div>
+
+  <!-- ENTRY -->
+  <div class="panel active" id="panel-entry">
+    <section class="card">
+      <h2>הוספת הגרלה</h2>
+      <div class="row-2">
+        <div class="field-row">
+          <label for="draw-date">תאריך</label>
+          <input type="date" id="draw-date" required />
+        </div>
+        <div class="field-row">
+          <label for="draw-slot">מועד הגרלה</label>
+          <select id="draw-slot"></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <label for="draw-number">מספר הגרלה (לא חובה)</label>
+        <input type="text" id="draw-number" placeholder="לדוגמה 13937" />
+      </div>
+      <div class="field-row">
+        <div class="picker-header">
+          <label>לחץ על המספרים שעלו</label>
+          <span id="picker-count" class="picker-count">0 נבחרו</span>
+        </div>
+        <div id="number-picker" class="number-grid picker"></div>
+        <button type="button" id="clear-picker" class="btn-ghost" style="margin-top:8px;">נקה בחירה</button>
+      </div>
+      <button id="submit-draw" class="btn-primary">שמור הגרלה</button>
+      <p id="form-error" class="error hidden"></p>
+    </section>
+  </div>
+
+  <!-- WALL -->
+  <div class="panel" id="panel-wall">
+    <section class="card">
+      <div class="stats-header"><h2>קיר המספרים</h2></div>
+      <div class="toggle-group" id="wall-range-toggle">
+        <button data-range="7" class="toggle active">7 אחרונות</button>
+        <button data-range="30" class="toggle">30 אחרונות</button>
+        <button data-range="all" class="toggle">הכל</button>
+      </div>
+      <div id="number-grid" class="number-grid"></div>
+      <div class="hot-cold">
+        <div><h3>הכי חמים</h3><div id="hot-list" class="chip-list"></div></div>
+        <div><h3>הכי קרים</h3><div id="cold-list" class="chip-list"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MISSING -->
+  <div class="panel" id="panel-missing">
+    <section class="card">
+      <h2>מספרים שלא עלו</h2>
+      <p class="hint">בחר כמה הגרלות אחרונות לבדוק, ותקבל את כל המספרים (1–70) שלא הופיעו באף אחת מהן.</p>
+      <div class="field-row">
+        <label for="missing-n">מספר הגרלות אחרונות לבדיקה</label>
+        <input type="number" id="missing-n" min="1" value="10" />
+      </div>
+      <button id="calc-missing" class="btn-secondary">חשב מספרים חסרים</button>
+      <div id="missing-result" style="margin-top:16px;"></div>
+    </section>
+  </div>
+
+  <!-- GAPS -->
+  <div class="panel" id="panel-gaps">
+    <section class="card">
+      <h2>ניתוח חזרות</h2>
+      <p class="hint">לכל מספר: כל כמה הגרלות בממוצע הוא חוזר להופיע. בחר מספר ספציפי לפירוט מלא, או צפה בטבלת סיכום לכל המספרים.</p>
+      <div class="field-row">
+        <label for="gap-number">בחר מספר לפירוט</label>
+        <select id="gap-number"></select>
+      </div>
+      <div id="gap-detail" style="margin-bottom:16px;"></div>
+      <h3 style="font-size:14px;color:var(--gold-soft);margin:0 0 10px;">טבלת מרווחים - כל המספרים</h3>
+      <div style="max-height:320px;overflow-y:auto;">
+        <table class="stat-table" id="gap-table"></table>
+      </div>
+    </section>
+  </div>
+
+  <!-- PAIRS -->
+  <div class="panel" id="panel-pairs">
+    <section class="card">
+      <h2>צירופים נפוצים</h2>
+      <p class="hint">זוגות מספרים שהופיעו ביחד הכי הרבה פעמים באותה הגרלה.</p>
+      <div id="pairs-result"></div>
+    </section>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="panel-history">
+    <section class="card">
+      <div class="history-header">
+        <h2>גיבוי ושחזור</h2>
+      </div>
+      <p class="hint">גיבוי אוטומטי לקובץ JSON מתבצע בכל הוספת הגרלה חדשה, בנוסף לשמירה בזיכרון הדפדפן. כך גם אם הנתונים המקומיים יימחקו, יש לך תמיד קובץ לשחזור.</p>
+      <p id="backup-status" class="hint" style="margin-top:0;"></p>
+      <div class="row-2">
+        <button id="export-backup" class="btn-secondary" style="flex:1;">ייצוא גיבוי ידני</button>
+        <button id="import-backup-trigger" class="btn-secondary" style="flex:1;">ייבוא גיבוי</button>
+      </div>
+      <input type="file" id="import-backup-input" accept="application/json" class="hidden" />
+      <p id="backup-msg" class="hint" style="margin-top:10px;"></p>
+    </section>
+
+    <section class="card">
+      <div class="history-header">
+        <h2>היסטוריית הגרלות</h2>
+        <button id="clear-all" class="btn-ghost">נקה הכל</button>
+      </div>
+      <div id="history-list"></div>
+      <p id="empty-state" class="empty hidden">עדיין לא הוזנו הגרלות. הוסיפו את הראשונה בלשונית "הזנה".</p>
+    </section>
+  </div>
+
+  <footer class="note">
+    הנתונים נשמרים באופן מקומי במכשיר שבו נפתח הקובץ, ואינם מסונכרנים למכשירים אחרים.
+    בכל הוספת הגרלה נשמר גם קובץ גיבוי JSON אוטומטית, ומחיקת הכל דורשת הקלדת אישור מפורש.
+    התוצאות מוזנות ידנית ואינן תוצאות רשמיות של מפעל הפיס.
+  </footer>
+</div>
+
+<script>
+(async function(){
+  const STORAGE_KEY = 'toto777_draws_v1';
+  const BACKUP_META_KEY = 'toto777_backup_meta_v1';
+  let draws = [];
+  let wallRange = '7';
+  let backupMeta = { lastBackupAt: null, method: null };
+
+  // ---------- Elements ----------
+  const dateInput = document.getElementById('draw-date');
+  const slotInput = document.getElementById('draw-slot');
+  const numberInput = document.getElementById('draw-number');
+  const numberPicker = document.getElementById('number-picker');
+  const pickerCount = document.getElementById('picker-count');
+  const clearPickerBtn = document.getElementById('clear-picker');
+  const formError = document.getElementById('form-error');
+  const submitBtn = document.getElementById('submit-draw');
+  let selectedNumbers = new Set();
+
+  const historyList = document.getElementById('history-list');
+  const emptyState = document.getElementById('empty-state');
+  const clearAllBtn = document.getElementById('clear-all');
+
+  const numberGrid = document.getElementById('number-grid');
+  const hotList = document.getElementById('hot-list');
+  const coldList = document.getElementById('cold-list');
+  const wallToggles = document.querySelectorAll('#wall-range-toggle .toggle');
+
+  const missingNInput = document.getElementById('missing-n');
+  const calcMissingBtn = document.getElementById('calc-missing');
+  const missingResult = document.getElementById('missing-result');
+
+  const gapNumberSelect = document.getElementById('gap-number');
+  const gapDetail = document.getElementById('gap-detail');
+  const gapTable = document.getElementById('gap-table');
+
+  const pairsResult = document.getElementById('pairs-result');
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+      if(btn.dataset.tab === 'gaps') renderGaps();
+      if(btn.dataset.tab === 'pairs') renderPairs();
+      if(btn.dataset.tab === 'wall') renderWall();
+    });
+  });
+
+  dateInput.value = new Date().toISOString().slice(0,10);
+
+  // populate gap number selector
+  for(let n=1;n<=70;n++){
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    gapNumberSelect.appendChild(opt);
+  }
+
+  // ---------- Number picker (tap to select) ----------
+  for(let n=1;n<=70;n++){
+    const cell = document.createElement('div');
+    cell.className = 'pick-cell';
+    cell.textContent = n;
+    cell.dataset.num = n;
+    cell.addEventListener('click', () => {
+      if(selectedNumbers.has(n)){
+        selectedNumbers.delete(n);
+        cell.classList.remove('selected');
+      } else {
+        selectedNumbers.add(n);
+        cell.classList.add('selected');
+      }
+      pickerCount.textContent = selectedNumbers.size + ' נבחרו';
+    });
+    numberPicker.appendChild(cell);
+  }
+  clearPickerBtn.addEventListener('click', () => {
+    selectedNumbers.clear();
+    numberPicker.querySelectorAll('.pick-cell').forEach(c => c.classList.remove('selected'));
+    pickerCount.textContent = '0 נבחרו';
+  });
+
+  // ---------- Dynamic draw-time slots based on weekday ----------
+  // Sun-Thu (0-4): 13:30 and 19:30. Friday (5): 13:30 only. Saturday (6): 21:30 (מוצ"ש) only.
+  function updateSlotOptions(){
+    const d = new Date(dateInput.value);
+    const day = d.getDay(); // 0=Sunday ... 6=Saturday
+    let options = [];
+    if(day === 5){ // Friday
+      options = [{v:'13:30', label:'13:30'}];
+    } else if(day === 6){ // Saturday
+      options = [{v:'21:30', label:'21:30 (מוצאי שבת)'}];
+    } else {
+      options = [{v:'13:30', label:'13:30'}, {v:'19:30', label:'19:30'}];
+    }
+    slotInput.innerHTML = '';
+    options.forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.v; opt.textContent = o.label;
+      slotInput.appendChild(opt);
+    });
+  }
+  dateInput.addEventListener('change', updateSlotOptions);
+  updateSlotOptions();
+
+  // ---------- Storage (plain localStorage - works reliably once hosted on a real https:// site) ----------
+  const storageBanner = document.getElementById('storage-banner');
+  const diagBox = document.getElementById('diag-box');
+  const diagLines = [];
+
+  function diag(line){
+    diagLines.push(line);
+    diagBox.textContent = diagLines.join('\n');
+  }
+
+  function showStorageBanner(msg){
+    storageBanner.textContent = '⚠️ ' + msg;
+    storageBanner.classList.remove('hidden');
+  }
+  function hideStorageBanner(){
+    storageBanner.classList.add('hidden');
+  }
+
+  async function diagnoseStorage(){
+    diag('protocol: ' + location.protocol);
+    diag('host: ' + location.host);
+    diag('standalone (home screen): ' + (window.navigator.standalone === true));
+    try{
+      localStorage.setItem('__diag_test__','1');
+      const v = localStorage.getItem('__diag_test__');
+      localStorage.removeItem('__diag_test__');
+      diag('localStorage: ' + (v === '1' ? 'WORKS' : 'unexpected value'));
+    } catch(e){
+      diag('localStorage: ERROR -> ' + (e && e.message ? e.message : String(e)));
+      showStorageBanner('השמירה במכשיר לא זמינה (בדוק שאתה לא בגלישה פרטית). לחץ "ייצוא גיבוי ידני" אחרי כל הזנה.');
+    }
+  }
+
+  async function loadDraws(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      draws = raw ? JSON.parse(raw) : [];
+      diag('loaded ' + draws.length + ' draws from localStorage');
+    } catch(e){
+      draws = [];
+      diag('load failed -> ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+
+  async function saveDraws(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(draws));
+      hideStorageBanner();
+    } catch(e){
+      showStorageBanner('השמירה נכשלה! לחץ מיד "ייצוא גיבוי ידני".');
+    }
+  }
+
+  async function loadBackupMeta(){
+    try{
+      const raw = localStorage.getItem(BACKUP_META_KEY);
+      backupMeta = raw ? JSON.parse(raw) : { lastBackupAt: null, method: null };
+    } catch(e){
+      backupMeta = { lastBackupAt: null, method: null };
+    }
+  }
+  async function saveBackupMeta(){
+    try{ localStorage.setItem(BACKUP_META_KEY, JSON.stringify(backupMeta)); } catch(e){}
+  }
+
+  async function downloadBackupFile(auto){
+    if(draws.length === 0) return false;
+    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), draws }, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g,'-');
+    a.href = url;
+    a.download = `toto777-backup-${auto ? 'auto-' : 'ידני-'}${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    backupMeta.lastBackupAt = new Date().toISOString();
+    backupMeta.method = auto ? 'אוטומטי' : 'ידני';
+    await saveBackupMeta();
+    renderBackupStatus();
+    return true;
+  }
+
+  function renderBackupStatus(){
+    const statusEl = document.getElementById('backup-status');
+    if(!statusEl) return;
+    if(!backupMeta.lastBackupAt){
+      statusEl.textContent = 'עדיין לא בוצע גיבוי בקובץ.';
+      return;
+    }
+    const d = new Date(backupMeta.lastBackupAt);
+    const dateStr = d.toLocaleDateString('he-IL');
+    const timeStr = d.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+    statusEl.textContent = `גיבוי אחרון (${backupMeta.method}): ${dateStr} ${timeStr}`;
+  }
+
+  submitBtn.addEventListener('click', async function(){
+    formError.classList.add('hidden');
+    const date = dateInput.value;
+    const slot = slotInput.value;
+    const drawNumber = numberInput.value.trim();
+    const nums = Array.from(selectedNumbers).sort((a,b)=>a-b);
+
+    if(!date){ showError('נא לבחור תאריך.'); return; }
+    if(nums.length === 0){ showError('נא לבחור לפחות מספר אחד בקיר המספרים.'); return; }
+
+    draws.push({
+      id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+      date, slot,
+      drawNumber: drawNumber || null,
+      numbers: nums
+    });
+    await saveDraws();
+    await downloadBackupFile(true);
+    numberInput.value = '';
+    selectedNumbers.clear();
+    numberPicker.querySelectorAll('.pick-cell').forEach(c => c.classList.remove('selected'));
+    pickerCount.textContent = '0 נבחרו';
+    dateInput.value = new Date().toISOString().slice(0,10);
+    updateSlotOptions();
+    renderAll();
+  });
+
+  function showError(msg){
+    formError.textContent = msg;
+    formError.classList.remove('hidden');
+  }
+
+  clearAllBtn.addEventListener('click', async function(){
+    if(draws.length === 0) return;
+    const typed = prompt(`פעולה זו תמחק לצמיתות את כל ${draws.length} ההגרלות ולא ניתן לבטל אותה.\n\nמומלץ ללחוץ קודם על "ייצוא גיבוי ידני".\n\nכדי לאשר מחיקה, הקלד בדיוק: מחק הכל`);
+    if(typed === null) return;
+    if(typed.trim() === 'מחק הכל'){
+      draws = [];
+      await saveDraws();
+      renderAll();
+    } else {
+      alert('הטקסט לא תואם. המחיקה בוטלה ולא נמחק דבר.');
+    }
+  });
+
+  // ---------- Backup export / import ----------
+  const exportBtn = document.getElementById('export-backup');
+  const importTriggerBtn = document.getElementById('import-backup-trigger');
+  const importInput = document.getElementById('import-backup-input');
+  const backupMsg = document.getElementById('backup-msg');
+
+  exportBtn.addEventListener('click', async function(){
+    const ok = await downloadBackupFile(false);
+    backupMsg.textContent = ok
+      ? 'הגיבוי הורד. שמור אותו באפליקציית קבצים למקרה שיהיה צורך לשחזר.'
+      : 'אין עדיין נתונים לגיבוי.';
+  });
+
+  importTriggerBtn.addEventListener('click', function(){
+    importInput.click();
+  });
+
+  importInput.addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(evt){
+      try{
+        const parsed = JSON.parse(evt.target.result);
+        const incoming = Array.isArray(parsed) ? parsed : parsed.draws;
+        if(!Array.isArray(incoming)) throw new Error('invalid format');
+
+        // merge, avoiding duplicate ids
+        const existingIds = new Set(draws.map(d => d.id));
+        let added = 0;
+        incoming.forEach(d => {
+          if(d && d.id && !existingIds.has(d.id)){
+            draws.push(d);
+            existingIds.add(d.id);
+            added++;
+          }
+        });
+        await saveDraws();
+        renderAll();
+        backupMsg.textContent = `השחזור הצליח. נוספו ${added} הגרלות חדשות (כפילויות דולגו).`;
+      } catch(err){
+        backupMsg.textContent = 'הקובץ לא תקין. ודא שבחרת קובץ גיבוי שיוצא מהכלי הזה.';
+      }
+      importInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  async function deleteDraw(id){
+    draws = draws.filter(d => d.id !== id);
+    await saveDraws();
+    renderAll();
+  }
+
+  // chronological order: by date, then slot priority, then insertion
+  const slotOrder = {'בוקר':0, 'צהריים':1, 'ערב':2, '':3};
+  function chronoSorted(){
+    return [...draws].sort((a,b)=>{
+      if(a.date !== b.date) return new Date(a.date) - new Date(b.date);
+      const sa = slotOrder[a.slot] ?? 3, sb = slotOrder[b.slot] ?? 3;
+      if(sa !== sb) return sa - sb;
+      return a.id.localeCompare(b.id);
+    });
+  }
+  function sortedDesc(){
+    return [...chronoSorted()].reverse();
+  }
+
+  // ---------- History ----------
+  function renderHistory(){
+    const sorted = sortedDesc();
+    historyList.innerHTML = '';
+    if(sorted.length === 0){
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+
+    sorted.forEach(draw => {
+      const card = document.createElement('div');
+      card.className = 'draw-card';
+      const top = document.createElement('div');
+      top.className = 'draw-card-top';
+      const meta = document.createElement('div');
+      meta.className = 'draw-meta';
+      const dateStr = new Date(draw.date).toLocaleDateString('he-IL');
+      meta.innerHTML = `<b>${dateStr}</b>${draw.slot ? ' · '+draw.slot : ''}${draw.drawNumber ? ' · הגרלה מס\' ' + draw.drawNumber : ''}`;
+      const del = document.createElement('button');
+      del.className = 'del-btn'; del.innerHTML = '✕'; del.title = 'מחק';
+      del.addEventListener('click', () => deleteDraw(draw.id));
+      top.appendChild(meta); top.appendChild(del);
+
+      const balls = document.createElement('div');
+      balls.className = 'balls';
+      draw.numbers.forEach(n => {
+        const b = document.createElement('div'); b.className = 'ball'; b.textContent = n;
+        balls.appendChild(b);
+      });
+      card.appendChild(top); card.appendChild(balls);
+      historyList.appendChild(card);
+    });
+  }
+
+  // ---------- Wall (frequency heatmap) ----------
+  function computeFrequency(subset){
+    const freq = {};
+    for(let i=1;i<=70;i++) freq[i] = 0;
+    subset.forEach(d => d.numbers.forEach(n => { freq[n] = (freq[n]||0) + 1; }));
+    return freq;
+  }
+
+  wallToggles.forEach(btn=>{
+    btn.addEventListener('click', function(){
+      wallToggles.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      wallRange = btn.dataset.range;
+      renderWall();
+    });
+  });
+
+  function renderWall(){
+    const sorted = sortedDesc();
+    const subset = wallRange === 'all' ? sorted : sorted.slice(0, parseInt(wallRange,10));
+    const freq = computeFrequency(subset);
+    const maxCount = Math.max(1, ...Object.values(freq));
+
+    numberGrid.innerHTML = '';
+    for(let n=1;n<=70;n++){
+      const cell = document.createElement('div');
+      cell.className = 'num-cell';
+      const count = freq[n];
+      if(count > 0){
+        const intensity = count / maxCount;
+        cell.style.background = `rgba(212,175,55,${0.15 + intensity*0.7})`;
+        cell.style.color = intensity > 0.5 ? '#0B1929' : '#F2E8D5';
+      }
+      cell.innerHTML = `${n}<span class="cnt">${count > 0 ? count : ''}</span>`;
+      numberGrid.appendChild(cell);
+    }
+
+    const withCounts = Object.entries(freq).filter(([n,c]) => c > 0);
+    const hot = [...withCounts].sort((a,b)=> b[1]-a[1]).slice(0,5);
+    const cold = [...withCounts].sort((a,b)=> a[1]-b[1]).slice(0,5);
+
+    hotList.innerHTML = ''; coldList.innerHTML = '';
+    if(withCounts.length === 0){
+      hotList.innerHTML = '<span class="no-data">אין עדיין נתונים</span>';
+      coldList.innerHTML = '<span class="no-data">אין עדיין נתונים</span>';
+    } else {
+      hot.forEach(([n]) => {
+        const chip = document.createElement('div'); chip.className = 'chip hot'; chip.textContent = n;
+        hotList.appendChild(chip);
+      });
+      cold.forEach(([n]) => {
+        const chip = document.createElement('div'); chip.className = 'chip cold'; chip.textContent = n;
+        coldList.appendChild(chip);
+      });
+    }
+  }
+
+  // ---------- Missing numbers ----------
+  calcMissingBtn.addEventListener('click', function(){
+    const n = Math.max(1, parseInt(missingNInput.value,10) || 10);
+    const sorted = sortedDesc();
+    const subset = sorted.slice(0, n);
+    const freq = computeFrequency(subset);
+    const missing = [];
+    for(let i=1;i<=70;i++) if(freq[i] === 0) missing.push(i);
+
+    missingResult.innerHTML = '';
+    const info = document.createElement('p');
+    info.className = 'hint';
+    info.style.margin = '0 0 12px';
+    info.textContent = `נבדקו ${subset.length} הגרלות אחרונות. נמצאו ${missing.length} מספרים שלא עלו כלל.`;
+    missingResult.appendChild(info);
+
+    if(missing.length === 0){
+      missingResult.innerHTML += '<p class="no-data">כל המספרים עלו לפחות פעם אחת בטווח שנבדק.</p>';
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = 'chip-list';
+    missing.forEach(num => {
+      const chip = document.createElement('div'); chip.className = 'chip missing'; chip.textContent = num;
+      list.appendChild(chip);
+    });
+    missingResult.appendChild(list);
+  });
+
+  // ---------- Gaps (recurrence intervals) ----------
+  function computeGapsForNumber(num, chrono){
+    const positions = [];
+    chrono.forEach((d, idx) => { if(d.numbers.includes(num)) positions.push(idx); });
+    const gaps = [];
+    for(let i=1;i<positions.length;i++) gaps.push(positions[i]-positions[i-1]);
+    return { positions, gaps };
+  }
+
+  function average(arr){
+    if(arr.length === 0) return null;
+    return arr.reduce((a,b)=>a+b,0) / arr.length;
+  }
+
+  function renderGaps(){
+    const chrono = chronoSorted();
+    if(chrono.length === 0){
+      gapDetail.innerHTML = '<p class="no-data">אין עדיין נתונים.</p>';
+      gapTable.innerHTML = '';
+      return;
+    }
+
+    // detail for selected number
+    const selected = parseInt(gapNumberSelect.value,10) || 1;
+    const { positions, gaps } = computeGapsForNumber(selected, chrono);
+    const avg = average(gaps);
+    gapDetail.innerHTML = '';
+    if(positions.length === 0){
+      gapDetail.innerHTML = `<p class="no-data">המספר ${selected} עדיין לא עלה בהיסטוריה שהוזנה.</p>`;
+    } else {
+      const p = document.createElement('p');
+      p.className = 'hint';
+      p.style.margin = '0';
+      p.innerHTML = `המספר <b style="color:var(--gold-soft)">${selected}</b> עלה ${positions.length} פעמים.` +
+        (avg !== null ? ` המרווח הממוצע בין הופעות: <b style="color:var(--gold-soft)">${avg.toFixed(1)}</b> הגרלות.` : ' עדיין אין מספיק הופעות לחישוב מרווח.');
+      gapDetail.appendChild(p);
+    }
+
+    // summary table for all numbers with at least 2 appearances
+    const rows = [];
+    for(let n=1;n<=70;n++){
+      const { positions:pos, gaps:g } = computeGapsForNumber(n, chrono);
+      if(pos.length >= 2){
+        rows.push({ n, count: pos.length, avgGap: average(g) });
+      }
+    }
+    rows.sort((a,b)=> a.avgGap - b.avgGap);
+
+    gapTable.innerHTML = '';
+    if(rows.length === 0){
+      gapTable.innerHTML = '<tr><td class="no-data">עדיין אין מספיק הופעות חוזרות לחישוב.</td></tr>';
+      return;
+    }
+    const thead = document.createElement('tr');
+    thead.innerHTML = '<th>מספר</th><th>הופעות</th><th>מרווח ממוצע</th>';
+    gapTable.appendChild(thead);
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${r.n}</b></td><td>${r.count}</td><td>${r.avgGap.toFixed(1)}</td>`;
+      gapTable.appendChild(tr);
+    });
+  }
+  gapNumberSelect.addEventListener('change', renderGaps);
+
+  // ---------- Co-occurring pairs ----------
+  function renderPairs(){
+    const pairCounts = {};
+    draws.forEach(d => {
+      const nums = d.numbers;
+      for(let i=0;i<nums.length;i++){
+        for(let j=i+1;j<nums.length;j++){
+          const key = nums[i]+'-'+nums[j];
+          pairCounts[key] = (pairCounts[key]||0) + 1;
+        }
+      }
+    });
+    const entries = Object.entries(pairCounts).filter(([k,c]) => c > 1);
+    entries.sort((a,b)=> b[1]-a[1]);
+    const top = entries.slice(0, 20);
+
+    pairsResult.innerHTML = '';
+    if(top.length === 0){
+      pairsResult.innerHTML = '<p class="no-data">עדיין אין מספיק נתונים לזיהוי צירופים חוזרים (צריך לפחות שני מקרים של אותו זוג).</p>';
+      return;
+    }
+    top.forEach(([key, count]) => {
+      const [a,b] = key.split('-');
+      const badge = document.createElement('span');
+      badge.className = 'pair-badge';
+      badge.innerHTML = `${a} + ${b} <span class="cnt">×${count}</span>`;
+      pairsResult.appendChild(badge);
+    });
+  }
+
+  function renderAll(){
+    renderHistory();
+    renderWall();
+    renderGaps();
+    renderPairs();
+  }
+
+  await diagnoseStorage();
+  await loadDraws();
+  await loadBackupMeta();
+  renderAll();
+  renderBackupStatus();
+})();
+</script>
+
+</body>
+</html>
