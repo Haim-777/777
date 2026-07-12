@@ -16,6 +16,8 @@
     --cream:#F2E8D5;
     --coral:#E8574A;
     --teal:#3F8C8A;
+    --hot-color:#FF3B1D;
+    --cold-color:#1E90FF;
     --muted:#7C93AC;
     --line:rgba(212,175,55,0.25);
   }
@@ -143,7 +145,7 @@
   .chip-list{display:flex;flex-wrap:wrap;gap:6px;}
   .chip{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-size:12px;font-weight:700;color:var(--navy-deep);}
-  .chip.hot{background:var(--coral);} .chip.cold{background:var(--teal);} .chip.missing{background:var(--muted);}
+  .chip.hot{background:var(--hot-color);color:#fff;} .chip.cold{background:var(--cold-color);color:#fff;} .chip.missing{background:var(--muted);}
   .no-data{color:var(--muted);font-size:13px;}
 
   .balls{display:flex;flex-wrap:wrap;gap:5px;}
@@ -223,8 +225,8 @@
       </div>
       <div class="field-row">
         <div class="picker-header">
-          <label>לחץ על המספרים שעלו</label>
-          <span id="picker-count" class="picker-count">0 נבחרו</span>
+          <label>לחץ על 17 המספרים שעלו</label>
+          <span id="picker-count" class="picker-count">0 / 17 נבחרו</span>
         </div>
         <div id="number-picker" class="number-grid picker"></div>
         <button type="button" id="clear-picker" class="btn-ghost" style="margin-top:8px;">נקה בחירה</button>
@@ -287,6 +289,12 @@
     <section class="card">
       <h2>צירופים נפוצים</h2>
       <p class="hint">זוגות מספרים שהופיעו ביחד הכי הרבה פעמים באותה הגרלה.</p>
+      <div class="toggle-group" id="pairs-range-toggle">
+        <button data-range="10" class="toggle">10 אחרונות</button>
+        <button data-range="20" class="toggle">20 אחרונות</button>
+        <button data-range="50" class="toggle">50 אחרונות</button>
+        <button data-range="all" class="toggle active">הכל</button>
+      </div>
       <div id="pairs-result"></div>
     </section>
   </div>
@@ -361,6 +369,8 @@
   const gapTable = document.getElementById('gap-table');
 
   const pairsResult = document.getElementById('pairs-result');
+  const pairsToggles = document.querySelectorAll('#pairs-range-toggle .toggle');
+  let pairsRange = 'all';
 
   // ---------- Tabs ----------
   document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -398,14 +408,18 @@
         selectedNumbers.add(n);
         cell.classList.add('selected');
       }
-      pickerCount.textContent = selectedNumbers.size + ' נבחרו';
+      updatePickerCount();
     });
     numberPicker.appendChild(cell);
+  }
+  function updatePickerCount(){
+    pickerCount.textContent = selectedNumbers.size + ' / 17 נבחרו';
+    pickerCount.style.color = selectedNumbers.size === 17 ? '#4CAF50' : (selectedNumbers.size > 17 ? 'var(--coral)' : '');
   }
   clearPickerBtn.addEventListener('click', () => {
     selectedNumbers.clear();
     numberPicker.querySelectorAll('.pick-cell').forEach(c => c.classList.remove('selected'));
-    pickerCount.textContent = '0 נבחרו';
+    updatePickerCount();
   });
 
   // ---------- Dynamic draw-time slots based on weekday ----------
@@ -537,7 +551,7 @@
     const nums = Array.from(selectedNumbers).sort((a,b)=>a-b);
 
     if(!date){ showError('נא לבחור תאריך.'); return; }
-    if(nums.length === 0){ showError('נא לבחור לפחות מספר אחד בקיר המספרים.'); return; }
+    if(nums.length !== 17){ showError(`יש לבחור בדיוק 17 מספרים (נבחרו ${nums.length}).`); return; }
 
     draws.push({
       id: Date.now().toString() + Math.random().toString(36).slice(2,6),
@@ -550,7 +564,7 @@
     numberInput.value = '';
     selectedNumbers.clear();
     numberPicker.querySelectorAll('.pick-cell').forEach(c => c.classList.remove('selected'));
-    pickerCount.textContent = '0 נבחרו';
+    updatePickerCount();
     dateInput.value = new Date().toISOString().slice(0,10);
     updateSlotOptions();
     renderAll();
@@ -828,9 +842,21 @@
   gapNumberSelect.addEventListener('change', renderGaps);
 
   // ---------- Co-occurring pairs ----------
+  pairsToggles.forEach(btn=>{
+    btn.addEventListener('click', function(){
+      pairsToggles.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      pairsRange = btn.dataset.range;
+      renderPairs();
+    });
+  });
+
   function renderPairs(){
+    const sorted = sortedDesc();
+    const subset = pairsRange === 'all' ? sorted : sorted.slice(0, parseInt(pairsRange,10));
+
     const pairCounts = {};
-    draws.forEach(d => {
+    subset.forEach(d => {
       const nums = d.numbers;
       for(let i=0;i<nums.length;i++){
         for(let j=i+1;j<nums.length;j++){
@@ -844,8 +870,14 @@
     const top = entries.slice(0, 20);
 
     pairsResult.innerHTML = '';
+    const info = document.createElement('p');
+    info.className = 'hint';
+    info.style.margin = '0 0 12px';
+    info.textContent = `מבוסס על ${subset.length} הגרלות.`;
+    pairsResult.appendChild(info);
+
     if(top.length === 0){
-      pairsResult.innerHTML = '<p class="no-data">עדיין אין מספיק נתונים לזיהוי צירופים חוזרים (צריך לפחות שני מקרים של אותו זוג).</p>';
+      pairsResult.innerHTML += '<p class="no-data">עדיין אין מספיק נתונים לזיהוי צירופים חוזרים (צריך לפחות שני מקרים של אותו זוג).</p>';
       return;
     }
     top.forEach(([key, count]) => {
