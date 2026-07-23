@@ -264,6 +264,16 @@
       </div>
       <button id="calc-missing" class="btn-secondary">חשב מספרים חסרים</button>
       <div id="missing-result" style="margin-top:16px;"></div>
+
+      <div id="cross-check-section" class="hidden" style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px;">
+        <p class="hint" style="margin-top:0;">מתוך המספרים שלא עלו, בדוק אילו כן הופיעו בטווח גדול יותר אחורה:</p>
+        <div class="field-row">
+          <label for="cross-m">מספר הגרלות אחורה לבדיקה נוספת</label>
+          <input type="number" id="cross-m" min="1" value="14" />
+        </div>
+        <button id="calc-cross" class="btn-secondary">בדוק הופעה בטווח הנוסף</button>
+        <div id="cross-result" style="margin-top:16px;"></div>
+      </div>
     </section>
   </div>
 
@@ -363,6 +373,12 @@
   const missingNInput = document.getElementById('missing-n');
   const calcMissingBtn = document.getElementById('calc-missing');
   const missingResult = document.getElementById('missing-result');
+  const crossCheckSection = document.getElementById('cross-check-section');
+  const crossMInput = document.getElementById('cross-m');
+  const calcCrossBtn = document.getElementById('calc-cross');
+  const crossResult = document.getElementById('cross-result');
+  let lastMissingList = [];
+  let lastMissingN = 0;
 
   const gapNumberSelect = document.getElementById('gap-number');
   const gapDetail = document.getElementById('gap-detail');
@@ -561,7 +577,7 @@
     });
     await saveDraws();
     await downloadBackupFile(true);
-    numberInput.value = '';
+    suggestNextDrawNumber();
     selectedNumbers.clear();
     numberPicker.querySelectorAll('.pick-cell').forEach(c => c.classList.remove('selected'));
     updatePickerCount();
@@ -573,6 +589,16 @@
   function showError(msg){
     formError.textContent = msg;
     formError.classList.remove('hidden');
+  }
+
+  // ---------- Auto-suggest next draw number ----------
+  function suggestNextDrawNumber(){
+    const nums = draws
+      .map(d => parseInt(d.drawNumber, 10))
+      .filter(n => !isNaN(n));
+    if(nums.length === 0) return;
+    const maxNum = Math.max(...nums);
+    numberInput.value = (maxNum + 1).toString();
   }
 
   clearAllBtn.addEventListener('click', async function(){
@@ -757,6 +783,10 @@
     const missing = [];
     for(let i=1;i<=70;i++) if(freq[i] === 0) missing.push(i);
 
+    lastMissingList = missing;
+    lastMissingN = subset.length;
+    crossResult.innerHTML = '';
+
     missingResult.innerHTML = '';
     const info = document.createElement('p');
     info.className = 'hint';
@@ -766,6 +796,7 @@
 
     if(missing.length === 0){
       missingResult.innerHTML += '<p class="no-data">כל המספרים עלו לפחות פעם אחת בטווח שנבדק.</p>';
+      crossCheckSection.classList.add('hidden');
       return;
     }
     const list = document.createElement('div');
@@ -775,6 +806,66 @@
       list.appendChild(chip);
     });
     missingResult.appendChild(list);
+    crossCheckSection.classList.remove('hidden');
+  });
+
+  // ---------- Cross-check: which missing numbers appeared further back ----------
+  calcCrossBtn.addEventListener('click', function(){
+    if(lastMissingList.length === 0) return;
+    const m = Math.max(1, parseInt(crossMInput.value,10) || 14);
+    const sorted = sortedDesc();
+    const subset = sorted.slice(0, m);
+    const freq = computeFrequency(subset);
+
+    const reappeared = lastMissingList
+      .filter(num => freq[num] > 0)
+      .map(num => ({ num, count: freq[num] }))
+      .sort((a,b)=> b.count - a.count);
+    const stillMissing = lastMissingList.filter(num => freq[num] === 0);
+
+    crossResult.innerHTML = '';
+    const info = document.createElement('p');
+    info.className = 'hint';
+    info.style.margin = '0 0 12px';
+    info.textContent = `מתוך ${lastMissingList.length} המספרים שלא עלו ב-${lastMissingN} ההגרלות האחרונות, נבדקה הופעתם ב-${subset.length} הגרלות אחורה.`;
+    crossResult.appendChild(info);
+
+    const reTitle = document.createElement('h3');
+    reTitle.style.cssText = 'font-size:13px;margin:0 0 8px;color:var(--muted);font-weight:500;';
+    reTitle.textContent = `כן הופיעו בטווח הנוסף (${reappeared.length})`;
+    crossResult.appendChild(reTitle);
+    if(reappeared.length === 0){
+      const p = document.createElement('p'); p.className = 'no-data'; p.textContent = 'אף אחד מהמספרים החסרים לא הופיע גם בטווח הנוסף.';
+      crossResult.appendChild(p);
+    } else {
+      const list = document.createElement('div');
+      list.className = 'chip-list';
+      reappeared.forEach(({num, count}) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip hot';
+        chip.title = `הופיע ${count} פעמים`;
+        chip.textContent = num;
+        list.appendChild(chip);
+      });
+      crossResult.appendChild(list);
+    }
+
+    const stillTitle = document.createElement('h3');
+    stillTitle.style.cssText = 'font-size:13px;margin:14px 0 8px;color:var(--muted);font-weight:500;';
+    stillTitle.textContent = `עדיין לא הופיעו גם בטווח הנוסף (${stillMissing.length})`;
+    crossResult.appendChild(stillTitle);
+    if(stillMissing.length === 0){
+      const p = document.createElement('p'); p.className = 'no-data'; p.textContent = 'כל המספרים החסרים הופיעו בטווח הנוסף.';
+      crossResult.appendChild(p);
+    } else {
+      const list2 = document.createElement('div');
+      list2.className = 'chip-list';
+      stillMissing.forEach(num => {
+        const chip = document.createElement('div'); chip.className = 'chip missing'; chip.textContent = num;
+        list2.appendChild(chip);
+      });
+      crossResult.appendChild(list2);
+    }
   });
 
   // ---------- Gaps (recurrence intervals) ----------
@@ -899,6 +990,7 @@
   await diagnoseStorage();
   await loadDraws();
   await loadBackupMeta();
+  suggestNextDrawNumber();
   renderAll();
   renderBackupStatus();
 })();
